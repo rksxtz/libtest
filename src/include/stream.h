@@ -28,13 +28,29 @@ namespace kw{
             size_type size;
     };
 
+    enum class mode_t: unsigned char{
+        R_OPEN      = 0x1, 
+        W_OPEN      = 0x1 << 1, 
+        RW_OPEN     = 0x1 << 2, 
+        APP_OPEN    = 0x1 << 3,
+        CREATE      = 0x1 << 7
+    };
+
+    constexpr unsigned char operator& (const mode_t& a, const mode_t& b) {
+        return static_cast<unsigned char>(a) & static_cast<unsigned char>(b);
+    }
+
     template<typename __tp> class stream{
         public:
             using node = stream_block_node<__tp>;
             using node_ptr = node*;
 
+            explicit stream():
+                pool{} {
+                }
+
             explicit stream(const std::string& filename):
-                pool{ new (std::nothrow) std::vector<node_ptr>{} }, _associated_file{ fopen(filename.c_str(), "rb+") },
+                pool{ new (std::nothrow) std::vector<kw::stream_block_node<__tp>*>{} },
                 mask{ 0x0 } {
                     if(this->_associated_file)
                         this->mask |= (BUFFERING | STREAM_READY);
@@ -44,16 +60,36 @@ namespace kw{
 
 
             ~stream() {
-                for(const node_ptr node: (*this->pool))
+                for(const kw::stream_block_node<__tp>* node: (*this->pool))
                     delete node;
                 delete this->pool;
                 fclose(this->_associated_file);
             }
 
+            std::string parse_mode(const mode_t& mode) {
+                std::string smode {};
+                if(mode & mode_t::RW_OPEN)
+                    smode += "r+";
+                else if(mode & mode_t::R_OPEN)
+                    smode.push_back('r');
+                else if(mode & mode_t::W_OPEN)
+                    smode.push_back('w');
+                else if(mode & mode_t::APP_OPEN)
+                    smode.push_back('a');
+                if(mode & mode_t::CREATE)
+                    smode.push_back('+');
+                return static_cast<std::string&&>(smode);
+            }
+
+            void associate(const std::string& filename, const mode_t& mode) noexcept {
+                if(!filename.empty())
+                    this->_associated_file = fopen(filename.c_str(), parse_mode(mode).c_str());
+            }
+
 
         private:
-            std::vector<kw::stream_block_node<__tp>*> pool;
-            FILE* _associated_flie;
+            std::vector<kw::stream_block_node<__tp>*>* pool;
+            FILE* _associated_file;
             unsigned int mask;
     };
 
