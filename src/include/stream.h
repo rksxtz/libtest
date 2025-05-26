@@ -82,8 +82,33 @@ namespace kw{
             }
 
             void associate(const std::string& filename, const mode_t& mode) noexcept {
-                if(!filename.empty())
+                if(!filename.empty()) {
                     this->_associated_file = fopen(filename.c_str(), parse_mode(mode).c_str());
+                    if(this->_associated_file)
+                        this->mask |= (BUFFERING | STREAM_READY);
+                    else this->mask |= (STREAM_ERROR | STREAM_BUSY | NOBUFFERING);
+                }
+            }
+
+            void dissociate(){
+                if(this->_associated_file){
+                    fclose(this->_associated_file);
+                    this->mask = {};
+                }
+            }
+
+            bool opened(){
+                return this->_associated_file;
+            }
+
+            std::string fetch_string(const bool full = true) noexcept {
+                if(this->_associated_file){
+                    std::string rv{};
+                    char ch{};
+                    while((ch = getc(this->_associated_file)) != EOF)
+                        rv.push_back(ch);
+                    return static_cast<std::string&&>(rv);
+                } return {};
             }
 
 
