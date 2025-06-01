@@ -1,124 +1,70 @@
-#ifndef _STREAM_H_
-#define _STREAM_H_
+#ifndef _STREAM
+#define _STREAM
+
+#include "decl.h"
 
 #include <cstdio>
 
-#include <string>
-#include <vector>
-
-#define BUFFERING 0b00000001
-#define NOBUFFERING 0b10000000
-
-#define STREAM_READY 0b00000010
-#define STREAM_BUSY 0b01000000
-#define STREAM_ERROR 0b00001000
-
+constexpr unsigned int __max_lines__ = BUFSIZ * BUFSIZ;
 
 namespace kw{
 
-    template<typename __tp> struct stream_block_node{
-        public:
-            using node = stream_block_node<__tp>;
-            using size_type = unsigned int;
-
-            explicit stream_block_node(const size_type size = 8):
-                next{ nullptr }, size{ size } { }
-    
-            node* next;
-            size_type size;
-    };
-
-    enum class mode_t: unsigned char{
-        R_OPEN      = 0x1, 
-        W_OPEN      = 0x1 << 1, 
-        RW_OPEN     = 0x1 << 2, 
-        APP_OPEN    = 0x1 << 3,
-        CREATE      = 0x1 << 7
-    };
-
-    constexpr unsigned char operator& (const mode_t& a, const mode_t& b) {
-        return static_cast<unsigned char>(a) & static_cast<unsigned char>(b);
+    _size_t _m_memcpy(void* _to, const void* _from, const _size_t _n){
+        unsigned int k{};
+        while(k != _n)
+            *(reinterpret_cast<unsigned char*>(_to) + k) = *(reinterpret_cast<const unsigned char*>(_from) + k);
+        return k;
     }
 
-    template<typename __tp> class stream{
+    enum mode: unsigned int{
+        CREATE  = 0b1000'0000,
+        READ    = 0b0000'0001,
+        WRITE   = 0b0000'0010,
+        RDWR    = 0b0000'0100,
+        APP     = 0b0000'1000,
+    };
+
+
+    template<typename __tp> struct _stream_node{
+        using type = __tp;
+        using key_t = unsigned int;
+
+        explicit _stream_node(const key_t key = {}, _stream_node<__tp>* next = nullptr):
+            key{ key }, next{ next } { }
+        
+        _stream_node(_stream_node<__tp>&& _mv_node) noexcept:
+            _stream_node(_mv_node.key, _mv_node.next) {
+                _mv_node.key = {}, _mv_node.next = nullptr;
+            }
+
+        key_t key;
+        _stream_node<__tp>* next;
+    };
+
+    template<typename __tp> class file_stream{
         public:
-            using node = stream_block_node<__tp>;
-            using node_ptr = node*;
-
-            explicit stream():
-                pool{} {
+            explcit file_stream(const std::string filename, mode _mode):
+                _file{ nullptr }, _lines{ new (std::nothrow) _stream_node<std::string> [__max_lines__]}, _filename{ filename }, _filesize{ }, _mode{ _mode } {
+                    this->_mode = _mode;
+                    std::string _o_mode {};
+                    if(this->_mode == mode::RDWR)
+                        _o_mode.push_back('r+')
+                    // TODO: handle more others
+                    this->_file = fopen(this->_filename.c_str(), _o_mode);
                 }
 
-            explicit stream(const std::string& filename):
-                pool{ new (std::nothrow) std::vector<kw::stream_block_node<__tp>*>{} },
-                mask{ 0x0 } {
-                    if(this->_associated_file)
-                        this->mask |= (BUFFERING | STREAM_READY);
-                    else
-                        this->mask |= (STREAM_ERROR | STREAM_BUSY | NOBUFFERING);
+                ~file_stream(){
+                    fclose(this->_file);
                 }
-
-
-            ~stream() {
-                for(const kw::stream_block_node<__tp>* node: (*this->pool))
-                    delete node;
-                delete this->pool;
-                fclose(this->_associated_file);
-            }
-
-            std::string parse_mode(const mode_t& mode) {
-                std::string smode {};
-                if(mode & mode_t::RW_OPEN)
-                    smode += "r+";
-                else if(mode & mode_t::R_OPEN)
-                    smode.push_back('r');
-                else if(mode & mode_t::W_OPEN)
-                    smode.push_back('w');
-                else if(mode & mode_t::APP_OPEN)
-                    smode.push_back('a');
-                if(mode & mode_t::CREATE)
-                    smode.push_back('+');
-                return static_cast<std::string&&>(smode);
-            }
-
-            void associate(const std::string& filename, const mode_t& mode) noexcept {
-                if(!filename.empty()) {
-                    this->_associated_file = fopen(filename.c_str(), parse_mode(mode).c_str());
-                    if(this->_associated_file)
-                        this->mask |= (BUFFERING | STREAM_READY);
-                    else this->mask |= (STREAM_ERROR | STREAM_BUSY | NOBUFFERING);
-                }
-            }
-
-            void dissociate(){
-                if(this->_associated_file){
-                    fclose(this->_associated_file);
-                    this->mask = {};
-                }
-            }
-
-            bool opened(){
-                return this->_associated_file;
-            }
-
-            std::string fetch_string(const bool full = true) noexcept {
-                if(this->_associated_file){
-                    std::string rv{};
-                    char ch{};
-                    while((ch = getc(this->_associated_file)) != EOF)
-                        rv.push_back(ch);
-                    return static_cast<std::string&&>(rv);
-                } return {};
-            }
-
 
         private:
-            std::vector<kw::stream_block_node<__tp>*>* pool;
-            FILE* _associated_file;
-            unsigned int mask;
+            FILE* _file;
+            _stream_node<std::string>* _lines;
+            const std::string _filename;
+            std::string _filesize;
+            unsigned int _mode;
     };
 
 }
-
 
 #endif
