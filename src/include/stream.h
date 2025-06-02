@@ -51,10 +51,18 @@ namespace kw{
                         _o_mode.push_back('r+')
                     // TODO: handle more others
                     this->_file = fopen(this->_filename.c_str(), _o_mode);
+                    establish_stream_buffer();
                 }
 
                 ~file_stream(){
                     fclose(this->_file);
+                }
+
+                void establish_stream_buffer(){
+                    char* buffer = new (std::nothrow) char[BUFSIZ];
+                    while(fgets(buffer, this->_file))
+                        this->_lines->emplace_back(std::string{ buffer });
+                    delete[] buffer;
                 }
 
         private:
