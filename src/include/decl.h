@@ -21,14 +21,35 @@ namespace kw{
 
     namespace buffer{
 
-        void* allocate(const unsigned int n){
+        /**
+         * @brief allocates n bytes of raw memory, using the global operator new
+         * 
+         * @param n 
+         * @return void* 
+         */
+        void* _m_allocate(const unsigned int n){
             return ::operator new(n);
         }
 
-        void deallocate(void* _buffer){
+        /**
+         * @brief deallocates the memory, whose first block is pointed to by _buffer
+         * precondition: the _buffer shall be previously allocated using kw::buffer::_m_allocate() or sole operator new().
+         * 
+         * @param _buffer 
+         */
+        void _m_deallocate(void* _buffer){
             ::operator delete(_buffer);
         }
 
+        /**
+         * @brief custom memory copy subroutine
+         * precondition: both the memory locations, as provided, shall have valid n bytes region, from the start
+         * 
+         * @param _t_buffer 
+         * @param _f_buffer 
+         * @param n 
+         * @return void* 
+         */
         void* _memcpy(void* _t_buffer, const void* _f_buffer, const unsigned int n){
             _size_t _cnt{};
             void* _bf_holder = _t_buffer;
@@ -36,6 +57,23 @@ namespace kw{
                 *(reinterpret_cast<unsigned char*>(_t_buffer) + _cnt) = *(reinterpret_cast<const unsigned char*>(_f_buffer) + _cnt),
                 ++_cnt;
             return _bf_holder;
+        }
+
+        /**
+         * @brief custom memory move subroutine
+         * precondition: similar to, kw::buffer::_memcpy, both the buffer shall have valid n bytes of region, in the memory
+         * 
+         * @param _t_buffer 
+         * @param _f_buffer 
+         * @param n 
+         * @return void* 
+         */
+        void* _memmove(void* _t_buffer, void* _f_buffer, const unsigned int n){
+            _size_t _cnt{};
+            while(_cnt != n)
+                *(reinterpret_cast<unsigned char*>(_t_buffer) + _cnt) = static_cast<unsigned char&&>(
+                    *(reinterpret_cast<unsigned char*>(_f_buffer) + _cnt))
+                , ++_cnt;
         }
 
     }
