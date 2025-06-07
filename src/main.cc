@@ -2,6 +2,8 @@
 #include <type_traits>
 #include <experimental/random>
 
+#include "include/decl.h"
+
 #include <iostream>
 
 
@@ -30,6 +32,9 @@ template<typename __tp> std::ostream& operator<< (std::ostream& __ost, const std
 }
 
 
-int main(){
+int main(const int argc, const char* argv[]){
+
+    std::cout << "filesize(this) : " << kw::_file_size("main.cc") << "\n";
+
     return 0;
 }

@@ -2,19 +2,29 @@
 #define _DECL
 
 #include <new>
+#include <sys/stat.h>
+
+#include <string>
+
+#include <iostream>
+
 
 using _size_t = unsigned int;
-using _ssize_t = signed long int;
+using _sgnsize_t = signed long int;
+
+using _file_size_t = unsigned long long int;
 
 template<typename __tp> using _ptr = __tp*;
 template<typename __tp> using _c_ptr = const _ptr<__tp>;
+
+#define _debug_error(message) std::cerr << message << '\n' << std::flush
 
 
 namespace kw{
 
     _size_t _m_memcpy(void*, const void*, _size_t);
 
-    _ssize_t strcmp(const void*, const void*);
+    _sgnsize_t strcmp(const void*, const void*);
 
     enum class mode;
 
@@ -78,6 +88,24 @@ namespace kw{
 
     }
 
+    /**
+         * @brief fetches the file-size, with appropriate units, making use of sys/stat.h
+         * 
+         * @param filename 
+         * @return std::string 
+         */
+        std::string _file_size(const std::string& filename){
+            struct stat _stat;
+            if(!stat(filename.c_str(), &_stat)){
+                _file_size_t _sz = _stat.st_size;
+                const char* units[] = { "B", "KB", "MB", "GB" };
+                unsigned int _uindex{};
+                long double _db_sz = static_cast<long double>(_sz);
+                while(_db_sz > 1024.0 && _uindex < 3)
+                    _db_sz /= 1024.0, _uindex++;
+                return std::string{ std::to_string(_db_sz) + " " + std::string{units[_uindex]} };
+            } _debug_error("Error fetching stat for " + filename + ".");
+        }
 
 }
 
