@@ -3,6 +3,7 @@
 #include <experimental/random>
 
 #include "include/decl.h"
+#include "include/logger.h"
 
 #include <iostream>
 
@@ -34,6 +35,7 @@ template<typename __tp> std::ostream& operator<< (std::ostream& __ost, const std
 
 int main(const int argc, const char* argv[]){
 
+    kw::logger logger{ "maincc.log" };
     std::cout << "filesize(this) : " << kw::_file_size("main.cc") << "\n";
 
     return 0;

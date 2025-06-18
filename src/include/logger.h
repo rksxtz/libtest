@@ -53,7 +53,7 @@ namespace kw{
                 switch(log){
                     case log_t::info: return "info";
                     case log_t::warning: return "warning";
-                    case log_t::erorr: return "error";
+                    case log_t::error: return "error";
                     default: break;
                 }
                 return "unkwn";

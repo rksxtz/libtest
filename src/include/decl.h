@@ -109,5 +109,42 @@ namespace kw{
 
 }
 
+class allocator{
+    public:
+        using address_t = unsigned long long int;
+        using address_ptr = void*;
+
+        explicit allocator():
+            _s_ptr{ nullptr }, _m_start_addr{ (address_t)(nullptr) }, _m_end_addr{ (address_t)(nullptr) },
+            _m_total_count{ } {
+                /* More Specializations, here */
+            }
+        
+        void* allocate(const std::size_t _mem_sz = {}){
+            if(!_s_ptr){
+                this->_s_ptr = kw::buffer::_m_allocate(_mem_sz);
+                this->_m_start_addr = (address_t) (this->_s_ptr);
+                this->_m_end_addr = (address_t) (this->_s_ptr + this->_m_total_count);
+                this->_m_total_count = _mem_sz;
+                return this->_s_ptr;
+            }
+            void* _r_ptr = kw::buffer::_m_allocate(_mem_sz);
+            this->_m_total_count += _mem_sz;
+            this->_m_end_addr = (address_t) (this->_m_start_addr + this->_m_total_count);
+            return _r_ptr; /* Allocated pointer (to void (untyped)) */
+        }
+
+        void deallocate(){
+            /** Manually delete each address by converting it to ugh, unsigned char or char */
+            /** TODO: De-Allocation Implementation */
+        }
+
+    private:
+        address_ptr _s_ptr;
+        address_t _m_start_addr;
+        address_t _m_end_addr;
+        std::size_t _m_total_count;
+};
+
 
 #endif
