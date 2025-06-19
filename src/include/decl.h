@@ -5,6 +5,8 @@
 #include <sys/stat.h>
 
 #include <string>
+#include <vector>
+#include <utility>
 
 #include <iostream>
 
@@ -111,39 +113,33 @@ namespace kw{
 
 class allocator{
     public:
-        using address_t = unsigned long long int;
-        using address_ptr = void*;
-
+        using size_t = std::size;
         explicit allocator():
-            _s_ptr{ nullptr }, _m_start_addr{ (address_t)(nullptr) }, _m_end_addr{ (address_t)(nullptr) },
-            _m_total_count{ } {
-                /* More Specializations, here */
-            }
+            _m_pool{ }, _m_allco_bytes{ }, _m_pool_length{ } { }
         
-        void* allocate(const std::size_t _mem_sz = {}){
-            if(!_s_ptr){
-                this->_s_ptr = kw::buffer::_m_allocate(_mem_sz);
-                this->_m_start_addr = (address_t) (this->_s_ptr);
-                this->_m_end_addr = (address_t) (this->_s_ptr + this->_m_total_count);
-                this->_m_total_count = _mem_sz;
-                return this->_s_ptr;
-            }
-            void* _r_ptr = kw::buffer::_m_allocate(_mem_sz);
-            this->_m_total_count += _mem_sz;
-            this->_m_end_addr = (address_t) (this->_m_start_addr + this->_m_total_count);
-            return _r_ptr; /* Allocated pointer (to void (untyped)) */
+        void* allocate(size_t n){
+            void* _r_ptr = kw::buffer::_m_allocate(n);
+            this->_m_pool.push_back( std::pair<size_t, void*>{ n, _r_ptr } );
+            this->_m_alloc_bytes += n;
+            this->_m_pool_length = this->_m_pool.size();
+            return _r_ptr;
         }
 
-        void deallocate(){
-            /** Manually delete each address by converting it to ugh, unsigned char or char */
-            /** TODO: De-Allocation Implementation */
+        void deallocate(const unsigned int offset = 0){
+            if(offset){
+                std::pair<size_t, void*> _m_mem_pair = this->_m_pool[offset];
+                this->_m_pool.erase( this->_m_pool.begin() + offset );
+                this->_m_alloc_bytes -= _m_mem_pair.first, --this->_m_pool_length;
+                kw::buffer::_m_deallocate(_m_mem_pair.second);
+            }else{
+
+            }
         }
 
     private:
-        address_ptr _s_ptr;
-        address_t _m_start_addr;
-        address_t _m_end_addr;
-        std::size_t _m_total_count;
+        std::vector<std::pair<size_t, void*>> _m_pool;
+        size_t _m_alloc_bytes;
+        size_t _m_pool_length;
 };
 
 
