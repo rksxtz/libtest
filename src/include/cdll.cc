@@ -1,9 +1,16 @@
 #include <memory>
+#include <limtis>
+#include <experimental/random>
 
+#include <string>
 #include <vector>
 
 #include <ostream>
 #include <iostream>
+
+
+#define __random_range__(low, high) std::experimental::randint(low, high)
+#define __random__() __random_range__( -int{ std::numeric_limits<unsigned char>::max() }, -int{ std::numeric_limits<unsigned char>::max() })
 
 
 namespace kw{
@@ -30,7 +37,7 @@ namespace kw{
             using node = _linked_list_node<key_t>;
 
             explicit linkedlist( node* _head_ = nullptr):
-                _m_sentinel{ std::unique_ptr<node>{ new (std::nothrow) node{ {}, nullptr, nullptr } } }, nil{ nullptr },
+                _m_sentinel{ std::unique_ptr<node>{ new (std::nothrow) node{ key_t{}, nullptr, nullptr } } }, nil{ nullptr },
                 head{ _head_ }, pool{ } {
                     this->nil = this->_m_sentinel.get();
                     this->nil->next = this->nil->prev = this->nil;
@@ -44,12 +51,12 @@ namespace kw{
                 We do not need a destructor, since its all handled by std::unique_ptr's
             */
 
-            void insert(node* node){
-                node->next = this->nil->next;
-                this->nil->next->prev = node;
-                this->nil->next = node, node->prev = this->nil;
-                this->head = node;
-                this->pool.emplace_back( std::unique_ptr<node>{ node } );
+            void insert(node* _node){
+                _node->next = this->nil->next;
+                this->nil->next->prev = _node;
+                this->nil->next = _node, _node->prev = this->nil;
+                this->head = _node;
+                this->pool.emplace_back( std::unique_ptr<node>{ _node } );
             }
 
             void insert(key_t key){
@@ -81,9 +88,25 @@ namespace kw{
             std::vector<std::unique_ptr<node>> pool;
     };
 
+    std::string randstring(const unsigned int n, const int low = int{'a'}, const int high = int{'z'}){
+        std::string _r_str(n, ' '); /* Efficient, asymptotically */
+        for(char& _chr: _s_str)
+            _chr = __random_range__(low, high);
+        return _r_str;
+    }
+
 }
 
 
 int main(){
+
+    constexpr unsigned int n = 0xf;
+    kw::linkedlist<std::string> linkedlist{};
+
+    for(unsigned int k=0; k!=n; ++k)
+        linkedlist.insert( kw::randstring( (k*2) >> 1) );
+    
+    kw::linkedlist<kw::linkedlist<std::vector<unsigned int>>> _ {}; /* Linked-List of Linked-List of Vector of unsigned int */
+
     return 0;
 }
