@@ -107,6 +107,7 @@ int main(){
         linkedlist.insert( kw::randstring( (k*2) >> 1) );
     
     kw::linkedlist<kw::linkedlist<std::vector<unsigned int>>> _ {}; /* Linked-List of Linked-List of Vector of unsigned int */
+    kw::vector<kw::set<kw::linkedlist<std::string>>> __{}; /* ? */
 
     return 0;
 }

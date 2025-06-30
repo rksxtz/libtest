@@ -78,6 +78,12 @@ namespace kw {
 }
 
 
+template<typename __tp> 
+typedef struct _d_mem_block_t{
+    // TODO: ?
+} mem_block;
+
+
 
 int main() {
     return 0;
